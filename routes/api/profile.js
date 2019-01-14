@@ -3,6 +3,8 @@ const router = express.Router()
 const mongose = require('mongoose')
 const passport = require('passport')
 
+const keys = require('../../config/keys')
+
 // Load mongoose db Profile model
 const Profile = require('../../models/Profile')
     // Load mongoose db User model
@@ -168,7 +170,8 @@ router.post('/', passport.authenticate('jwt', {
 // @route POST /api/profile/experience
 // @desc  add work experience to profile
 // @access Private
-router.post('/experience', passport.authenticate('jwt', {
+// router.post(`/${keys.testval}`, passport.authenticate('jwt', {
+router.post('experience', passport.authenticate('jwt', {
     session: false
 }), (req, res) => {
     const {
@@ -231,6 +234,63 @@ router.post('/education', passport.authenticate('jwt', {
             profile.education.unshift(newEdu)
             profile.save().then(profile => res.json(profile))
         })
+})
+
+// @route DELETE /api/profile/experience
+// @desc  remove experience entries profile
+// @access Private
+router.delete('/experience/:exp_id', passport.authenticate('jwt', {
+    session: false
+}), (req, res) => {
+
+    Profile.findOne({
+            user: req.user.id
+        })
+        .then(profile => {
+            const removeIndex = profile.experience.map(item => item.id).indexOf(req.params.exp_id)
+                // splice out array (experience entry)
+            profile.experience.splice(removeIndex, 1)
+                // save the action
+            profile.save().then(profile => res.json(profile)).catch(err => res.status(404).json(err))
+        })
+})
+
+// @route DELETE /api/profile/education
+// @desc  remove education entries profile
+// @access Private
+router.delete('/education/:edu_id', passport.authenticate('jwt', {
+    session: false
+}), (req, res) => {
+
+    Profile.findOne({
+            user: req.user.id
+        })
+        .then(profile => {
+            const removeIndex = profile.education.map(item => item.id).indexOf(req.params.edu_id)
+                // splice out array (education entry)
+            profile.education.splice(removeIndex, 1)
+                // save the action
+            profile.save().then(profile => res.json(profile)).catch(err => res.status(404).json(err))
+        })
+})
+
+// @route DELETE user and profile
+// @desc  DELETE USER AND PROFILE
+// @access Private
+router.delete('/', passport.authenticate('jwt', {
+    session: false
+}), (req, res) => {
+    Profile.findOneAndRemove({
+            user: req.user.id
+        })
+        .then(() => {
+            User.findOneAndRemove({
+                _id: req.user.id
+            }).then(() => res.json({
+                success: true
+            }))
+        })
+
 })
 
 
